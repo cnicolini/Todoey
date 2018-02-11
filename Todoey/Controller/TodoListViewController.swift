@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
@@ -14,8 +15,7 @@ class TodoListViewController: UITableViewController {
     
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
-    let encoder = PropertyListEncoder()
-    let decoder = PropertyListDecoder()
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -65,9 +65,11 @@ class TodoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (item) in
             print("Success! \(String(describing: textField.text))")
+            
+            let newItem = Item(context: self.context)
 
-            let newItem = Item()
             newItem.title = textField.text!
+            newItem.done = false
             
             self.itemArray.append(newItem)
 
@@ -95,8 +97,7 @@ class TodoListViewController: UITableViewController {
     func saveItems() {
         do {
             
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
             
         }
         catch {
@@ -105,19 +106,17 @@ class TodoListViewController: UITableViewController {
     }
  
     func loadItems() {
+
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
         
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            }
-            catch {
-                print("Error loading data \(error)")
-            }
-            
+        do {
+            itemArray = try context.fetch(request)
+        }
+        catch {
+            print("Error fetching items \(error)")
         }
         
-        
     }
+
 }
 
