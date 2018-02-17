@@ -12,7 +12,7 @@ import RealmSwift
 class CategoryViewControllerTableViewController: UITableViewController {
 
 
-    let realm = try! Realm()
+    var realm: Realm!
     
     var categories: Results<Category>?
     
@@ -30,6 +30,11 @@ class CategoryViewControllerTableViewController: UITableViewController {
 
 //        print(dataFilePath ?? "No data file path")
 
+        // Updating Realm Schema from version 0 to 1
+        updateSchema()
+        
+        realm = try! Realm()
+        
         // Location of the Realm database
         print(Realm.Configuration.defaultConfiguration.fileURL ?? "")
         
@@ -172,4 +177,26 @@ class CategoryViewControllerTableViewController: UITableViewController {
         tableView.reloadData()
     }
     
+    //MARK: - Data Definigion
+    func updateSchema() {
+        
+        let config = Realm.Configuration(
+            schemaVersion: 1,
+            migrationBlock: { migration, oldSchemaVersion in
+                if oldSchemaVersion < 1 {
+                    migration.enumerateObjects(ofType: Item.className(), { (oldItem, newItem) in
+                        newItem?["dateCreated"] = Date()
+                    })
+                }
+                
+        }
+        )
+        
+        Realm.Configuration.defaultConfiguration = config
+        
+//        let _ = try! Realm()
+        
+    }
+    
+
 }
