@@ -7,15 +7,17 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewControllerTableViewController: UITableViewController {
 
-    var categories = [Category]()
-    
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    let realm = try! Realm()
+    
+    var categories: Results<Category>?
+    
+    // Used to print the location of the plist file
+//    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,8 +28,11 @@ class CategoryViewControllerTableViewController: UITableViewController {
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem
 
-        print(dataFilePath ?? "No data file path")
+//        print(dataFilePath ?? "No data file path")
 
+        // Location of the Realm database
+        print(Realm.Configuration.defaultConfiguration.fileURL ?? "")
+        
         loadCategories()
     }
 
@@ -46,16 +51,16 @@ class CategoryViewControllerTableViewController: UITableViewController {
     */
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories.count
+        return categories?.count ?? 1
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath) as UITableViewCell
 
-        let category = categories[indexPath.row]
+        let category = categories?[indexPath.row]
         
-        cell.textLabel?.text = category.name
+        cell.textLabel?.text = category?.name ?? "No Categories Added Yet"
         
         return cell
     }
@@ -115,12 +120,10 @@ class CategoryViewControllerTableViewController: UITableViewController {
             
             print("Success entering new category \(categoryTextField.text!)")
             
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             newCategory.name = categoryTextField.text!
             
-            self.categories.append(newCategory)
-            
-            self.saveCategories()
+            self.save(category: newCategory)
         }
         
         alert.addTextField { (alertTextField) in
@@ -145,29 +148,25 @@ class CategoryViewControllerTableViewController: UITableViewController {
         let destinationVC = segue.destination as! TodoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.category = categories[indexPath.row]
+            destinationVC.selectedCategory = categories?[indexPath.row]
         }
     }
     
     //MARK: - Data Manipulation Methods
-    func loadCategories(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
-        
-        do {
-            categories = try context.fetch(request)
-        }
-        catch {
-            print("Error fetching categories \(error)")
-        }
+    func loadCategories() {
+        categories = realm.objects(Category.self)
 
         tableView.reloadData()
     }
     
-    func saveCategories() {
+    func save(category: Category) {
         do {
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         }
         catch {
-            print("Error saving categories \(error)")
+            print("Error saving category \(error)")
         }
         
         tableView.reloadData()
