@@ -24,7 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         updateSchema()
 
         do {
-            _ = try! Realm()
+            _ = try Realm()
         }
         catch {
             print("Error initializing Realm, \(error)")
