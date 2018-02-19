@@ -122,6 +122,8 @@ class TodoListViewController: UITableViewController {
 
 }
 
+
+//MARK - Search Bar Delegate
 extension TodoListViewController: UISearchBarDelegate {
 
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
