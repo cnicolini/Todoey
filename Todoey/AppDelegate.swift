@@ -23,6 +23,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Updating Realm Schema from version 0 to 1
         updateSchema()
 
+        do {
+            _ = try! Realm()
+        }
+        catch {
+            print("Error initializing Realm, \(error)")
+        }
+
         return true
     }
 
@@ -111,8 +118,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         )
         
         Realm.Configuration.defaultConfiguration = config
-        
-        let _ = try! Realm()
         
     }
 
