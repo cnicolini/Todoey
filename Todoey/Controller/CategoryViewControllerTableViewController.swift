@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class CategoryViewControllerTableViewController: SwipeTableViewController {
 
@@ -34,6 +35,18 @@ class CategoryViewControllerTableViewController: SwipeTableViewController {
         
         loadCategories()
         tableView.rowHeight = 80.0
+        tableView.separatorStyle = .none
+        
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        guard let backgroundColor = UIColor(hexString: "1D9BF6") else { fatalError("Bacground color is invalid") }
+        
+        guard let navBar = navigationController?.navigationBar else { fatalError("Navigation bar is not visible") }
+        
+        navBar.barTintColor = backgroundColor
+        navBar.tintColor = ContrastColorOf(backgroundColor, returnFlat: true)
+        navBar.largeTitleTextAttributes = [NSAttributedStringKey.foregroundColor: ContrastColorOf(backgroundColor, returnFlat: true)]
         
     }
 
@@ -52,9 +65,21 @@ class CategoryViewControllerTableViewController: SwipeTableViewController {
 
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
 
-        let category = categories?[indexPath.row]
-        
-        cell.textLabel?.text = category?.name ?? "No Categories Added Yet"
+        if let category = categories?[indexPath.row] {
+            cell.textLabel?.text = category.name
+
+            guard let backgroundColorStr = category.backgroundColor else { fatalError("Category color not set") }
+
+            guard let backgroundColor = UIColor(hexString: backgroundColorStr) else { fatalError("Color \(backgroundColorStr) is not valid") }
+            
+            print("Current cell's background color \(cell.backgroundColor?.hexValue())")
+            print("Setting value of \(backgroundColorStr)")
+            
+            cell.backgroundColor = backgroundColor
+            cell.textLabel?.textColor = ContrastColorOf(backgroundColor, returnFlat: true)
+
+            print("New cell's background color \(cell.backgroundColor?.hexValue())")
+        }
         
         return cell
     }
@@ -71,6 +96,7 @@ class CategoryViewControllerTableViewController: SwipeTableViewController {
             
             let newCategory = Category()
             newCategory.name = categoryTextField.text!
+            newCategory.backgroundColor = UIColor.randomFlat.hexValue()
             
             self.save(category: newCategory)
         }
@@ -143,7 +169,7 @@ class CategoryViewControllerTableViewController: SwipeTableViewController {
     func updateSchema() {
         
         let config = Realm.Configuration(
-            schemaVersion: 1,
+            schemaVersion: 2,
             migrationBlock: { migration, oldSchemaVersion in
                 if oldSchemaVersion < 1 {
                     migration.enumerateObjects(ofType: Item.className(), { (oldItem, newItem) in
@@ -151,7 +177,13 @@ class CategoryViewControllerTableViewController: SwipeTableViewController {
                     })
                 }
                 
-        }
+                if oldSchemaVersion < 2 {
+                    migration.enumerateObjects(ofType: Category.className(), { (oldItem, newItem) in
+                        newItem?["backgroundColor"] = UIColor.randomFlat.hexValue()
+                    })
+                }
+                
+            }
         )
         
         Realm.Configuration.defaultConfiguration = config
